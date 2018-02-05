@@ -1,0 +1,28 @@
+public class ChargeOver
+{
+    @future(callout=true)
+	static public void sendToChargeOver(String json)
+	{
+        String url = 'https://testsalesforce.chargeover.com/api/v3/customer';
+
+        String username = 'RcY8miXu9dO2h34C1LVeGf5ZFs0PArpK';
+        String password = 'rnUuFjxBlDCAyh3mOsbo7PteLgkZRN2W';
+
+        Blob header = Blob.valueOf(username + ':' + password);
+		String auth = 'Basic ' + EncodingUtil.base64Encode(header);
+
+		HttpRequest req = new HttpRequest();
+		req.setEndpoint(url);
+		req.setMethod('POST');
+		req.setBody(json);
+		req.setHeader('Authorization', auth);
+        req.setHeader('Content-Type', 'application/json');
+
+		Http http = new Http();
+		HttpResponse resp = http.send(req);
+
+		System.debug('Response body: ' + resp.getBody());
+
+		return;
+	}
+}

@@ -1,0 +1,28 @@
+trigger Push_Accounts_to_ChargeOver on Account (after insert, after update)
+{
+	List<sObject> objs = new List<sObject>();
+
+	if (Trigger.isInsert || Trigger.isUpdate)
+	{
+		for (sObject o : Trigger.new)
+		{
+			objs.add(o);
+		}
+	}
+	/*else if (Trigger.isDelete)
+	{
+		for (sObject o : Trigger.old)
+		{
+			objs.add(o);
+		}
+	}*/
+
+    for (integer i = 0; i < objs.size(); i++)
+    {
+		Map<String, String> v = new Map<String, String>();
+        v.put('company', (String) objs[i].get('Name'));
+        v.put('external_key', (String) objs[i].get('Id'));
+
+    	ChargeOver.sendToChargeOver(JSON.serialize(v));
+    }
+}
