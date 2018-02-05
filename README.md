@@ -25,5 +25,6 @@ Within Salesforce, you need to allow Salesforce to call out to ChargeOver by:
 
 ## The Examples
 
-* Push_Accounts_to_ChargeOver.apxt - this shows how to push Accounts in Salesforce to Customers in ChargeOver
+* Push_New_Accounts_to_ChargeOver.apxt - this shows how to push new Accounts in Salesforce to Customers in ChargeOver
+* Push_ClosedWon_to_ChargeOver.apxt - this shows how to push Accounts and Opportunities to ChargeOver when an Opportunity goes to Closed-Won status
 * ChargeOver.apxc - helper methods

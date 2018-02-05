@@ -1,6 +1,6 @@
-trigger Push_Accounts_to_ChargeOver on Account (after insert, after update)
+trigger Push_New_Accounts_to_ChargeOver on Account (after insert, after update)
 {
-	List<sObject> objs = new List<sObject>();
+    List<sObject> objs = new List<sObject>();
 
 	if (Trigger.isInsert || Trigger.isUpdate)
 	{
@@ -23,6 +23,6 @@ trigger Push_Accounts_to_ChargeOver on Account (after insert, after update)
         v.put('company', (String) objs[i].get('Name'));
         v.put('external_key', (String) objs[i].get('Id'));
 
-    	ChargeOver.sendToChargeOver(JSON.serialize(v));
+    	ChargeOver.toCustomer(JSON.serialize(v));
     }
 }
