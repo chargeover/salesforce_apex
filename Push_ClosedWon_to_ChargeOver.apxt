@@ -4,51 +4,51 @@ trigger Push_ClosedWon_to_ChargeOver on Opportunity (after update)
 
     System.debug('Trigger running...');
 
-	if (Trigger.isInsert || Trigger.isUpdate)
-	{
+    if (Trigger.isInsert || Trigger.isUpdate)
+    {
         System.debug('Checking for closed-won...');
 
         // Catch closed-win opportunities in Salesforce
-		for (Opportunity o : Trigger.new)
-		{
+        for (Opportunity o : Trigger.new)
+        {
             if (o.isWon &&
                 !Trigger.oldMap.get(o.Id).isWon)
             {
                 System.debug('Found a closed-won opportunity');
 
-            	objs.add(o);
+                objs.add(o);
             }
-		}
-	}
-	/*else if (Trigger.isDelete)
-	{
-		for (sObject o : Trigger.old)
-		{
-			objs.add(o);
-		}
-	}*/
+        }
+    }
+    /*else if (Trigger.isDelete)
+    {
+        for (sObject o : Trigger.old)
+        {
+            objs.add(o);
+        }
+    }*/
 
     for (integer i = 0; i < objs.size(); i++)
     {
         System.debug('Account ID is: ' + (String) objs[i].get('AccountId'));
 
         List<Account> a = [SELECT Id, Name FROM Account WHERE Id = :(String) objs[i].get('AccountId')];
-		if (a != null && a.size()>0)
+        if (a != null && a.size()>0)
         {
             System.debug('Found the account for the opportunity... pushing to ChargeOver');
 
-			Map<String, String> va = new Map<String, String>();
+            Map<String, String> va = new Map<String, String>();
             va.put('company', (String) a[0].Name);
             va.put('external_key', (String) a[0].Id);
 
             ChargeOver.toCustomer(JSON.serialize(va));
 
             Map<String, String> v = new Map<String, String>();
-        	v.put('customer_external_key', (String) objs[i].get('AccountId'));
+            v.put('customer_external_key', (String) objs[i].get('AccountId'));
             v.put('paycycle', 'mon');  // Monthly
-        	v.put('external_key', (String) objs[i].get('Id'));
+            v.put('external_key', (String) objs[i].get('Id'));
 
-            ChargeOver.toSubscription(JSOn.serialize(v));
+            ChargeOver.toSubscription(JSON.serialize(v));
         }
         else
         {

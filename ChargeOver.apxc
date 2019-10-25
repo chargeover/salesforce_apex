@@ -4,34 +4,77 @@ public class ChargeOver
     static final String CHARGEOVER_USERNAME = 'RcY8miXu9dO2h34C1LVeGf5ZFs0PArpK';
     static final String CHARGEOVER_PASSWORD = 'rnUuFjxBlDCAyh3mOsbo7PteLgkZRN2W';
 
-    static public void toCustomer(String json)
+    static public void createCustomer(String json)
     {
         ChargeOver.toChargeOver('/customer', json);
     }
 
-    static public void toSubscription(String json)
+    /**
+     * Update EXISTING LINES on an EXISTING subscription in ChargeOver
+     *
+     * See: https://developer.chargeover.com/apidocs/rest/#subscription-upgrade-downgrade
+     */
+    static public void updateLinesOnSubscription(String sf_id, String json)
     {
-		ChargeOver.toChargeOver('/package', json);
+        ChargeOver.toChargeOver('/package/' + sf_id + '?action=upgrade', json);
+    }
+
+    /**
+     * Add a NEW LINE ITEM to an EXISTING subscription in ChargeOver
+     *
+     * See: https://developer.chargeover.com/apidocs/rest/#subscription-upgrade-downgrade
+     */
+    static public void addLinesToSubscription(String sf_id, String json)
+    {
+        ChargeOver.toChargeOver('/package/' + sf_id + '?action=upgrade', json);
+    }
+
+    static public void createSubscription(String json)
+    {
+        ChargeOver.toChargeOver('/package', json);
+    }
+
+    static public String serializeCustomer(Map<String, String> cus)
+    {
+        return JSON.serialize(cus);
+    }
+
+    static public String serializeSubscription(Map<String, String> sub, List<Map<String, String>> lines)
+    {
+        JSONGenerator gen = JSON.createGenerator(true);
+
+        gen.writeStartObject();
+        for (String k: sub.keySet())
+        {
+            gen.writeStringField(k, (String) sub.get(k));
+        }
+
+        gen.writeFieldName('line_items');
+        gen.writeObject(lines);
+
+        gen.writeEndObject();
+
+        return gen.getAsString();
     }
 
     @future(callout=true)
     static public void toChargeOver(String endpoint, String json)
-	{
+    {
         Blob header = Blob.valueOf(ChargeOver.CHARGEOVER_USERNAME + ':' + ChargeOver.CHARGEOVER_PASSWORD);
-		String auth = 'Basic ' + EncodingUtil.base64Encode(header);
+        String auth = 'Basic ' + EncodingUtil.base64Encode(header);
 
-		HttpRequest req = new HttpRequest();
-		req.setEndpoint(ChargeOver.CHARGEOVER_URL + '/' + endpoint);
-		req.setMethod('POST');
-		req.setBody(json);
-		req.setHeader('Authorization', auth);
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint(ChargeOver.CHARGEOVER_URL + '/' + endpoint);
+        req.setMethod('POST');
+        req.setBody(json);
+        req.setHeader('Authorization', auth);
         req.setHeader('Content-Type', 'application/json');
 
-		Http http = new Http();
-		HttpResponse resp = http.send(req);
+        Http http = new Http();
+        HttpResponse resp = http.send(req);
 
-		System.debug('Response body: ' + resp.getBody());
+        System.debug('Response body: ' + resp.getBody());
 
-		return;
-	}
+        return;
+    }
 }

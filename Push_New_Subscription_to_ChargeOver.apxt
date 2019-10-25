@@ -1,0 +1,68 @@
+trigger Push_New_Subscription_to_ChargeOver on ChargeOver_Subscription__c (after update) {
+    List<sObject> objs = new List<sObject>();
+
+    System.debug('Trigger running...');
+
+	if (Trigger.isInsert || Trigger.isUpdate)
+	{
+        // Anything a subscription is added/updated, do this
+		for (ChargeOver_Subscription__c s : Trigger.new)
+		{
+            objs.add(s);
+		}
+	}
+
+    for (integer i = 0; i < objs.size(); i++)
+    {
+        System.debug('Account ID is: ' + (String) objs[i].get('Account__c'));
+
+        List<Account> a = [SELECT Id, Name FROM Account WHERE Id = :(String) objs[i].get('Account__c')];
+		if (a != null && a.size()>0)
+        {
+            System.debug('Found the account for the Subscription... pushing to ChargeOver');
+
+            // Make sure the customer exists in ChargeOver
+            Map<String, String> ma = new Map<String, String>();
+            ma.put('company', a[0].Name);
+            ma.put('external_key', a[0].Id);
+            ChargeOver.createCustomer(ChargeOver.serializeCustomer(ma));
+
+            // Get the _line items_ for the subscription
+            List<ChargeOver_Subscription_Line__c> lines = [
+                SELECT
+                	Id,
+                	Name,
+                    Quantity__c,
+                	Description__c
+                FROM
+                	ChargeOver_Subscription_Line__c
+                WHERE
+                	ChargeOver_Subscription__c = :(String) objs[i].get('Id')];
+            List<Map<String, String>> sub_lines = new List<Map<String, String>>();
+            for (ChargeOver_Subscription_Line__c l : lines)
+            {
+                Map<String, String> m = new Map<String, String>();
+
+                m.put('external_key', (String) l.Id);
+                m.put('item_external_key', 'basic');
+                m.put('line_quantity', String.valueOf(l.get('Quantity__c')));
+                m.put('descrip', (String) l.get('Description__c'));
+
+                sub_lines.add(m);
+            }
+
+            Map<String, String> sub = new Map<String, String>();
+            sub.put('customer_external_key', (String) objs[i].get('Account__c'));
+            sub.put('paycycle', 'mon');
+            sub.put('external_key', objs[i].Id);
+
+            // Serialize the subscription and create it in ChargeOver
+            String s = ChargeOver.serializeSubscription(sub, sub_lines);
+            ChargeOver.createSubscription(s);
+        }
+        else
+        {
+            System.debug('Account not found?');
+        }
+    }
+}

@@ -1,0 +1,74 @@
+trigger Upgrade_Existing_Subscription_in_ChargeOver on ChargeOver_Subscription_Line__c (after insert, after update) {
+
+    // List of records that were ADDED
+    List<sObject> obj_adds = new List<sObject>();
+
+    // List of records that were UPDATED
+    List<sObject> obj_updates = new List<sObject>();
+
+    System.debug('Trigger running...');
+
+	if (Trigger.isInsert)
+	{
+        // Anything a subscription is ADDED, do this
+		for (ChargeOver_Subscription_Line__c s : Trigger.new)
+		{
+            obj_adds.add(s);
+		}
+	}
+    else if (Trigger.isUpdate)
+    {
+        // Anything a subscription is UPDATED, do this
+		for (ChargeOver_Subscription_Line__c s : Trigger.new)
+		{
+            obj_updates.add(s);
+		}
+    }
+
+    // Handle any NEW line items added to the subscription
+    for (integer i = 0; i < obj_adds.size(); i++)
+    {
+        // Get the related subscription
+        List<ChargeOver_Subscription__c> subs = [SELECT Id, Name FROM ChargeOver_Subscription__c WHERE Id = :(String) obj_adds[i].get('ChargeOver_Subscription__c')];
+
+        // Build a payload to send to ChargeOver
+		Map<String, String> m = new Map<String, String>();
+
+		m.put('external_key', (String) obj_adds[i].Id);
+        m.put('item_external_key', 'basic');
+		m.put('line_quantity', String.valueOf(obj_adds[i].get('Quantity__c')));
+		m.put('descrip', (String) obj_adds[i].get('Description__c'));
+
+        List<Map<String, String>> sub_lines = new List<Map<String, String>>();
+        sub_lines.add(m);
+
+		// Serialize the lines, and add them to the existing subscription
+    	String s = ChargeOver.serializeSubscription(new Map<String, String>(), sub_lines);
+    	ChargeOver.addLinesToSubscription((String) subs[0].get('Name'), s);
+	}
+
+    // Handle any UPDATED line items on the subscription
+    for (integer i = 0; i < obj_updates.size(); i++)
+    {
+        // Get the related subscription
+        List<ChargeOver_Subscription__c> subs = [SELECT Id, Name FROM ChargeOver_Subscription__c WHERE Id = :(String) obj_updates[i].get('ChargeOver_Subscription__c')];
+
+        // Build a payload to send to ChargeOver
+		Map<String, String> m = new Map<String, String>();
+
+        // If you send an EXISTING line item external key value, then it will UPDATE the EXISTING line item
+		m.put('line_item_external_key', (String) obj_updates[i].Id);
+
+        // Other data to send
+        m.put('item_external_key', 'basic');
+		m.put('line_quantity', String.valueOf(obj_updates[i].get('Quantity__c')));
+		m.put('descrip', (String) obj_updates[i].get('Description__c'));
+
+        List<Map<String, String>> sub_lines = new List<Map<String, String>>();
+        sub_lines.add(m);
+
+		// Serialize the lines, and add them to the existing subscription
+    	String s = ChargeOver.serializeSubscription(new Map<String, String>(), sub_lines);
+    	ChargeOver.updateLinesOnSubscription((String) subs[0].get('Name'), s);
+	}
+}
